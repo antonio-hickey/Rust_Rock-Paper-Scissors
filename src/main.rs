@@ -1,102 +1,48 @@
 use std::io;
-use std::fmt;
-use rand::seq::SliceRandom;
 
+mod player;
+mod round;
+mod weapons;
+
+pub use player::Player;
+pub use weapons::weapons_map;
+pub use weapons::Weapon;
+pub use weapons::WeaponKind;
 
 fn main() {
-    println!("Rock Paper Scissors!");
+    println!("Enter your player's name:");
+    let mut p1_name = String::new();
+    io::stdin()
+        .read_line(&mut p1_name)
+        .expect("failed to read name.");
 
-    // Define players
-    let mut player1 = Player {
-        name: "Antonio".to_string(),
-        wins: 0,
-        losses: 0,
-    };
-    let mut player2 = Player {
-        name: "Robot".to_string(),
-        wins: 0,
-        losses: 0,
-    };
+    let players: Vec<Player> = player::render_players(p1_name.trim().to_string());
+    let mut player1 = players[0].clone();
+    let mut player2 = players[1].clone();
+    let mut game_iteration: i32 = 0;
 
     loop {
-        game(&mut player1, &mut player2);
-        println!("\n{}\n", player1);
-        println!("{}\n", player2);
-    }
-}
+        if player1.wins == 3 || player2.wins == 3 {
+            let winner: Player = if player1.wins > player2.wins {
+                player1
+            } else {
+                player2
+            };
+            println!("Game over! {} wins!", winner.name);
+            break;
+        };
 
-fn game(mut p1: &mut Player, mut p2: &mut Player) {
-    println!("Choose your weapon: \n1. Rock\n2. Paper\n3. Scissor\n\n");
-    let mut p1_choice = String::new();
-    io::stdin()
-        .read_line(&mut p1_choice)
-        .expect("Failed to read choice.");
-    let p1_choice = p1_choice.trim().to_string();
-    
-    let weapons = vec!["Rock", "Paper", "Scissor"];
-    let p2_choice = weapons.choose(&mut rand::thread_rng()).unwrap().to_string();
+        game_iteration += 1;
 
-    let winner = who_wins(p1_choice, p2_choice);
-    if winner == "Player1" {
-        p1.wins = p1.wins + 1;
-        p2.losses = p2.losses + 1;
-    } else if winner == "Player2" {
-        p2.wins = p2.wins + 1;
-        p1.losses = p1.losses + 1;
-    } else {
-        //pass
-    }
-}
-
-fn who_wins(choice1: String, choice2: String) -> String {
-    println!("{}", choice2);
-    if choice1 == String::from("Rock") {
-        if choice2 == String::from("Rock") {
-            return "Draw".to_string();
-        } else if choice2 == "Paper".to_string() {
-           return "Player2".to_string();
-        } else if choice2 == "Scissor".to_string() {
-            return "Player1".to_string();
-        } else {
-            return "Invalid Game".to_string();
-        }
-    } else if choice1 == "Paper".to_string() {
-        if choice2 == "Paper".to_string() {
-            return "Draw".to_string();
-        } else if choice2 == "Rock".to_string() {
-            return "Player1".to_string();
-        } else if choice2 == "Scissor".to_string() {
-            return "Player2".to_string();
-        } else {
-            return "Invalid Game".to_string();
-        } 
-    }
-
-    else if choice1 == "Scissor".to_string() {
-        if choice2 == "Scissor".to_string() {
-            return "Draw".to_string();
-        } else if choice2 == "Paper".to_string() {
-            return "Player1".to_string();
-        } else if choice2 == "Rock".to_string() {
-            return "Player2".to_string();
-        } else {
-            return "Invalid Game".to_string();
-        } 
-    }
-
-    else {
-        return "Invalid Game".to_string();
-    }
-}
-
-struct Player {
-    name: String,
-    wins: u32,
-    losses: u32,
-}
-
-impl fmt::Display for Player {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "(Player Name: {}, Wins: {}, Losses: {})", self.name, self.wins, self.losses)
+        round::handler(&mut player1, &mut player2, game_iteration);
+        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+        println!(
+            "\n{}: Wins = {} Losses = {}\nRobot: Wins = {} Losses = {}",
+            String::from(p1_name.trim()),
+            player1.wins,
+            player1.losses,
+            player2.wins,
+            player2.losses,
+        );
     }
 }
